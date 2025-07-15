@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Tree Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .tree-container {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            min-height: 500px;
+            cursor: grab;
+        }
+
+        .tree-container:active {
+            cursor: grabbing;
+        }
+
+        .tree-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: center center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(244, 67, 54, 0.3);
+        }
+
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: white;
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .zoom-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-around;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .node {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .node.root {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+
+        .node.expanding {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            transform: scale(1.2);
+        }
+
+        .node.new {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .node.regular {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+        }
+
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: #666;
+            transform-origin: left center;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+
+            .zoom-controls {
+                top: 10px;
+                right: 10px;
+            }
+
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .zoom-info {
+                top: 10px;
+                left: 10px;
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Binary Tree Visualizer</div>
+        <div class="subtitle">Real-time Algorithm Visualization</div>
+    </div>
+
+    <div class="container">
+        <div class="tree-container" id="treeContainer">
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">+</button>
+                <button class="zoom-btn" onclick="zoomOut()">-</button>
+            </div>
+            <div class="zoom-info">
+                Zoom: <span id="zoomLevel">100</span>%
+            </div>
+            <div class="tree-content" id="treeContent">
+                <!-- Tree will be rendered here -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="addRandomNode()">Add Random</button>
+            <button class="btn btn-primary" onclick="addCustomNode()">Add Custom</button>
+            <button class="btn btn-primary" onclick="generateRandomTree()">Generate Tree</button>
+            <button class="btn btn-danger" onclick="clearTree()">Clear</button>
+        </div>
+
+        <div class="info">
+            <div class="info-text">Nodes: <span id="nodeCount">0</span></div>
+            <div class="info-text">Status: <span id="status">Idle</span></div>
+        </div>
+    </div>
+
+    <script>
+        class TreeNode {
+            constructor(value, x, y, level, parent = null) {
+                this.id = 'node_' + Date.now() + '_' + Math.random();
+                this.value = value;
+                this.x = x;
+                this.y = y;
+                this.level = level;
+                this.parent = parent;
+                this.left = null;
+                this.right = null;
+                this.isExpanding = false;
+                this.isNew = true;
+            }
+        }
+
+        class BinaryTreeVisualizer {
+            constructor() {
+                this.root = null;
+                this.nodes = [];
+                this.maxLevel = 0;
+                this.isExpanding = false;
+                this.expansionQueue = [];
+                this.nodeCounter = 0;
+                
+                // Drag and zoom properties
+                this.isDragging = false;
+                this.dragStartX = 0;
+                this.dragStartY = 0;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.scale = 1;
+                this.minScale = 0.1;
+                this.maxScale = 3;
+                
+                this.config = {
+                    nodeRadius: 25,
+                    levelHeight: 80,
+                    nodeSpacing: 60,
+                    animationDuration: 300,
+                    expansionDelay: 500
+                };
+
+                this.initializeDragAndZoom();
+            }
+
+            initializeDragAndZoom() {
+                const container = document.getElementById('treeContainer');
+                const content = document.getElementById('treeContent');
+
+                // Mouse events for dragging
+                container.addEventListener('mousedown', (e) => {
+                    if (e.target === container || e.target === content) {
+                        this.isDragging = true;
+                        this.dragStartX = e.clientX - this.offsetX;
+                        this.dragStartY = e.clientY - this.offsetY;
+                        container.style.cursor = 'grabbing';
+                    }
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (this.isDragging) {
+                        this.offsetX = e.clientX - this.dragStartX;
+                        this.offsetY = e.clientY - this.dragStartY;
+                        this.updateTransform();
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    this.isDragging = false;
+                    container.style.cursor = 'grab';
+                });
+
+                // Wheel event for zooming
+                container.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.zoom(delta);
+                });
+
+                // Touch events for mobile
+                let touchStartX = 0;
+                let touchStartY = 0;
+                let initialDistance = 0;
+
+                container.addEventListener('touchstart', (e) => {
+                    if (e.touches.length === 1) {
+                        // Single touch - dragging
+                        const touch = e.touches[0];
+                        this.isDragging = true;
+                        this.dragStartX = touch.clientX - this.offsetX;
+                        this.dragStartY = touch.clientY - this.offsetY;
+                    } else if (e.touches.length === 2) {
+                        // Two touches - zooming
+                        const touch1 = e.touches[0];
+                        const touch2 = e.touches[1];
+                        initialDistance = Math.sqrt(
+                            Math.pow(touch2.clientX - touch1.clientX, 2) +
+                            Math.pow(touch2.clientY - touch1.clientY, 2)
+                        );
+                    }
+                });
+
+                container.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (e.touches.length === 1 && this.isDragging) {
+                        const touch = e.touches[0];
+                        this.offsetX = touch.clientX - this.dragStartX;
+                        this.offsetY = touch.clientY - this.dragStartY;
+                        this.updateTransform();
+                    } else if (e.touches.length === 2) {
+                        const touch1 = e.touches[0];
+                        const touch2 = e.touches[1];
+                        const currentDistance = Math.sqrt(
+                            Math.pow(touch2.clientX - touch1.clientX, 2) +
+                            Math.pow(touch2.clientY - touch1.clientY, 2)
+                        );
+                        const delta = currentDistance / initialDistance;
+                        this.zoom(delta);
+                        initialDistance = currentDistance;
+                    }
+                });
+
+                container.addEventListener('touchend', () => {
+                    this.isDragging = false;
+                });
+            }
+
+            zoom(factor) {
+                const newScale = this.scale * factor;
+                if (newScale >= this.minScale && newScale <= this.maxScale) {
+                    this.scale = newScale;
+                    this.updateTransform();
+                    this.updateZoomInfo();
+                }
+            }
+
+            updateTransform() {
+                const content = document.getElementById('treeContent');
+                content.style.transform = `translate(${this.offsetX}px, ${this.offsetY}px) scale(${this.scale})`;
+            }
+
+            updateZoomInfo() {
+                document.getElementById('zoomLevel').textContent = Math.round(this.scale * 100);
+            }
+
+            resetView() {
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.scale = 1;
+                this.updateTransform();
+                this.updateZoomInfo();
+            }
+
+            insert(value) {
+                if (!this.root) {
+                    const centerX = window.innerWidth / 2;
+                    const startY = 100;
+                    this.root = new TreeNode(value, centerX, startY, 0);
+                    this.nodes.push(this.root);
+                    this.maxLevel = 0;
+                    this.addToExpansionQueue(this.root);
+                } else {
+                    this.insertNode(this.root, value);
+                }
+                this.updateDisplay();
+            }
+
+            insertNode(node, value) {
+                if (value < node.value) {
+                    if (node.left === null) {
+                        const newLevel = node.level + 1;
+                        const newX = node.x - this.config.nodeSpacing * Math.pow(2, this.maxLevel - newLevel);
+                        const newY = node.y + this.config.levelHeight;
+                        
+                        const newNode = new TreeNode(value, newX, newY, newLevel, node);
+                        node.left = newNode;
+                        this.nodes.push(newNode);
+                        this.maxLevel = Math.max(this.maxLevel, newLevel);
+                        this.addToExpansionQueue(newNode);
+                        this.rebalanceTree();
+                    } else {
+                        this.insertNode(node.left, value);
+                    }
+                } else {
+                    if (node.right === null) {
+                        const newLevel = node.level + 1;
+                        const newX = node.x + this.config.nodeSpacing * Math.pow(2, this.maxLevel - newLevel);
+                        const newY = node.y + this.config.levelHeight;
+                        
+                        const newNode = new TreeNode(value, newX, newY, newLevel, node);
+                        node.right = newNode;
+                        this.nodes.push(newNode);
+                        this.maxLevel = Math.max(this.maxLevel, newLevel);
+                        this.addToExpansionQueue(newNode);
+                        this.rebalanceTree();
+                    } else {
+                        this.insertNode(node.right, value);
+                    }
+                }
+            }
+
+            addToExpansionQueue(node) {
+                this.expansionQueue.push(node);
+                if (!this.isExpanding) {
+                    this.startExpansion();
+                }
+            }
+
+            startExpansion() {
+                this.isExpanding = true;
+                this.updateStatus();
+                this.processExpansionQueue();
+            }
+
+            processExpansionQueue() {
+                if (this.expansionQueue.length === 0) {
+                    this.isExpanding = false;
+                    this.updateStatus();
+                    return;
+                }
+
+                const node = this.expansionQueue.shift();
+                node.isExpanding = true;
+                node.isNew = false;
+                this.updateDisplay();
+
+                setTimeout(() => {
+                    node.isExpanding = false;
+                    this.updateDisplay();
+                    this.processExpansionQueue();
+                }, this.config.expansionDelay);
+            }
+
+            rebalanceTree() {
+                this.recalculatePositions(this.root, 0, 0);
+            }
+
+            recalculatePositions(node, level, position) {
+                if (!node) return position;
+
+                const totalNodesAtLevel = Math.pow(2, level);
+                const spacing = this.config.nodeSpacing * Math.pow(2, this.maxLevel - level);
+                const startX = window.innerWidth / 2 - (totalNodesAtLevel - 1) * spacing / 2;
+                
+                node.x = startX + position * spacing;
+                node.y = 100 + level * this.config.levelHeight;
+                node.level = level;
+
+                let nextPosition = position + 1;
+                if (node.left) {
+                    nextPosition = this.recalculatePositions(node.left, level + 1, position * 2);
+                }
+                if (node.right) {
+                    nextPosition = this.recalculatePositions(node.right, level + 1, position * 2 + 1);
+                }
+
+                return nextPosition;
+            }
+
+            clear() {
+                this.root = null;
+                this.nodes = [];
+                this.maxLevel = 0;
+                this.isExpanding = false;
+                this.expansionQueue = [];
+                this.resetView();
+                this.updateDisplay();
+            }
+
+            generateRandomTree(count = 10) {
+                for (let i = 0; i < count; i++) {
+                    const value = Math.floor(Math.random() * 100) + 1;
+                    this.insert(value);
+                }
+            }
+
+            updateDisplay() {
+                const content = document.getElementById('treeContent');
+                content.innerHTML = '';
+
+                // Draw connections
+                this.nodes.forEach(node => {
+                    if (node.left) {
+                        this.drawConnection(node, node.left);
+                    }
+                    if (node.right) {
+                        this.drawConnection(node, node.right);
+                    }
+                });
+
+                // Draw nodes
+                this.nodes.forEach(node => {
+                    this.drawNode(node);
+                });
+
+                this.updateInfo();
+            }
+
+            drawNode(node) {
+                const content = document.getElementById('treeContent');
+                const nodeElement = document.createElement('div');
+                
+                let className = 'node';
+                if (node.level === 0) className += ' root';
+                else if (node.isExpanding) className += ' expanding';
+                else if (node.isNew) className += ' new';
+                else className += ' regular';
+
+                nodeElement.className = className;
+                nodeElement.textContent = node.value;
+                nodeElement.style.left = (node.x - 25) + 'px';
+                nodeElement.style.top = (node.y - 25) + 'px';
+
+                content.appendChild(nodeElement);
+            }
+
+            drawConnection(from, to) {
+                const content = document.getElementById('treeContent');
+                const connection = document.createElement('div');
+                connection.className = 'connection';
+
+                const dx = to.x - from.x;
+                const dy = to.y - from.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                connection.style.width = distance + 'px';
+                connection.style.left = from.x + 'px';
+                connection.style.top = from.y + 'px';
+                connection.style.transform = `rotate(${angle}deg)`;
+
+                content.appendChild(connection);
+            }
+
+            updateInfo() {
+                document.getElementById('nodeCount').textContent = this.nodes.length;
+            }
+
+            updateStatus() {
+                document.getElementById('status').textContent = this.isExpanding ? 'Expanding...' : 'Idle';
+            }
+        }
+
+        // Global instance
+        const treeVisualizer = new BinaryTreeVisualizer();
+
+        // Global functions for buttons
+        function addRandomNode() {
+            const value = Math.floor(Math.random() * 100) + 1;
+            treeVisualizer.insert(value);
+        }
+
+        function addCustomNode() {
+            const value = prompt('Enter a value (1-100):');
+            if (value !== null) {
+                const numValue = parseInt(value);
+                if (numValue >= 1 && numValue <= 100) {
+                    treeVisualizer.insert(numValue);
+                } else {
+                    alert('Please enter a value between 1 and 100');
+                }
+            }
+        }
+
+        function generateRandomTree() {
+            treeVisualizer.generateRandomTree(10);
+        }
+
+        function clearTree() {
+            treeVisualizer.clear();
+        }
+
+        function zoomIn() {
+            treeVisualizer.zoom(1.2);
+        }
+
+        function zoomOut() {
+            treeVisualizer.zoom(0.8);
+        }
+
+        // Initialize display
+        treeVisualizer.updateDisplay();
+    </script>
+</body>
+</html> 
